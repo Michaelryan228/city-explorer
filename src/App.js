@@ -1,40 +1,80 @@
-import './App.css';
 import React from 'react';
+import './App.css';
+import Card from 'react-bootstrap/Card';
 import axios from 'axios';
-import City from './City.js';
-import Search from './Search.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-class App extends React.Component{
+class App extends React.Component {
   constructor(props) {
-    super(props);
+    super(props)
 
-    this.state={
+    this.state = {
       haveWeSearchedYet: false,
-      citySearchedFor: '',
+      citySearchedFor: React.createRef(),
+      cityName: '',
+      cityLat: '',
+      cityLon: '',
+      cityMapSrc: ''
     };
   }
 
-  handleShowSearch = () => {
-    this.setState({haveWeSearchedYet: false});
+  handleFormSubmit = () => {
+    this.setState({ haveWeSearchedYet: false });
   }
+  handleChange = (e) => {
+    const { name, value } = e.target
+    this.setState({ [name]: value });
+  }
+  getCityInfo = async (e) => {
+    e.preventDefault();
 
-  handleSearch = async(cityResult) => {
+    try {
+      let locationResponseData = await axios.get(`https://us1.locationiq.com/v1/search.php?key=${process.env.REACT_APP_LOCATION}&q=${this.state.citySearchedFor}&format=json`);
 
-    let locationResponseData = await axios.get(`https://us1.locationiq.com/v1/search.php?key=${process.env.REACT_APP_LOCATIONIQ_KEY}&q=${cityResult}&format=json`);
-    console.log(locationResponseData);
-    this.setState({
-      haveWeSearchedYet: true,
-      citySearchedFor: cityResult,
-      locationData: locationResponseData.data[0]
-    });
+      this.setState({
+        haveWeSearchedYet: true,
+        locationData: locationResponseData.data[0],
+        cityName: locationResponseData.data[0].display_name,
+        cityLat: locationResponseData.data[0].lat,
+        cityLon: locationResponseData.data[0].lon,
+        cityMapSrc: `https://maps.locationiq.com/v3/staticmap?key=${process.env.REACT_APP_LOCATION}&center=${locationResponseData.data[0].lat},${locationResponseData.data[0].lon}&zoom=10`
+      });
+    } catch (err) {
+      console.log('we found an error')
+      this.setState({ error: `${err.message}: ${err.response.data.error}` });
+    }
   }
   render() {
-    return(
+    return (
       <>
         <h1>City Explorer</h1>
+        <form className="form" onSubmit={(e) => this.getCityInfo(e)}>
+          <input type="text" name='citySearchedFor' onChange={(e) => this.handleChange(e)}
+          placeholder="Search City,State" />
+          <button type="submit">Explore</button>
+        </form>
+        {this.state.error ?
+          <Card>
+              <Card.Body>{this.state.error} : {this.state.error}</Card.Body>
+          </Card> :
+          ''}
         {this.state.haveWeSearchedYet ?
-        <City handleShowSearch={this.handleShowSearch} cityData={this.state.locationData} /> :
-        <Search handleSearch={this.handleSearch} />}
+          <Card className="card" style={{ width: '30rem' }}
+            bg="primary"
+            text="light"
+            >
+            <Card.Img variant="top" src={this.state.cityMapSrc} alt="map" />
+            <Card.Body>
+              <Card.Title>{this.state.cityName}</Card.Title>
+              <Card.Text>
+                <>
+                  Latitude: {this.state.cityLat}
+                  <br></br>
+                  Longitude: {this.state.cityLon}
+                </>
+              </Card.Text>
+            </Card.Body>
+            </Card> : <br></br>}
       </>
     );
   }
