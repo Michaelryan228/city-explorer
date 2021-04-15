@@ -3,6 +3,7 @@ import './App.css';
 import Card from 'react-bootstrap/Card';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import Weather from './weather.js';
 
 class App extends React.Component {
   constructor(props) {
@@ -14,7 +15,8 @@ class App extends React.Component {
       cityName: '',
       cityLat: '',
       cityLon: '',
-      cityMapSrc: ''
+      cityMapSrc: '',
+      weatherData: []
     };
   }
 
@@ -41,24 +43,39 @@ class App extends React.Component {
       });
     } catch (err) {
       console.log('we found an error')
-      this.setState({ error: `${err.message}: ${err.response.data.error}` });
+      this.setState({ error: `${err.message}`});
     }
+    this.getWeatherData();
   }
+
+  getWeatherData = async () => {
+    try {
+    const weatherData = await axios.get('http://localhost:3002/weather')
+    this.setState({
+      weatherData: weatherData.data
+    })
+  } catch(err) {
+    this.setState({error: `${err.message}`})
+  }
+  }
+
   render() {
     return (
       <>
-        <h1>City Explorer</h1>
-        <form className="form" onSubmit={(e) => this.getCityInfo(e)}>
-          <input type="text" name='citySearchedFor' onChange={(e) => this.handleChange(e)}
-          placeholder="Search City,State" />
-          <button type="submit">Explore</button>
-        </form>
-        {this.state.error ?
-          <Card>
+      <div className="wrapper">
+          <h1>City Explorer</h1>
+          <form className="form" onSubmit={(e) => this.getCityInfo(e)}>
+            <input type="text" name='citySearchedFor' onChange={(e) => this.handleChange(e)}
+              placeholder="Search City,State" />
+            <button type="submit">Explore</button>
+          </form>
+          {this.state.error ?
+            <Card>
               <Card.Body>{this.state.error} : {this.state.error}</Card.Body>
-          </Card> :
-          ''}
-        {this.state.haveWeSearchedYet ?
+            </Card> :
+            ''}
+          {this.state.haveWeSearchedYet ?
+      <>
           <Card className="card" style={{ width: '30rem' }}
             bg="primary"
             text="light"
@@ -68,14 +85,18 @@ class App extends React.Component {
               <Card.Title>{this.state.cityName}</Card.Title>
               <Card.Text>
                 <>
-                  Latitude: {this.state.cityLat}
+                    Latitude: {this.state.cityLat}
                   <br></br>
                   Longitude: {this.state.cityLon}
                 </>
               </Card.Text>
             </Card.Body>
-            </Card> : <br></br>}
+            </Card>
+            <Weather weatherData={this.state.weatherData} error={this.state.error} />
       </>
+      : ''}
+      </div>
+    </>
     );
   }
 }
