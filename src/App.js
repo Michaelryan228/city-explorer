@@ -4,6 +4,7 @@ import Card from 'react-bootstrap/Card';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Weather from './weather.js';
+import Movies from './movie.js'
 
 class App extends React.Component {
   constructor(props) {
@@ -16,7 +17,8 @@ class App extends React.Component {
       cityLat: '',
       cityLon: '',
       cityMapSrc: '',
-      weatherData: []
+      weatherData: [],
+      movieData: []
     };
   }
 
@@ -46,6 +48,7 @@ class App extends React.Component {
       this.setState({ error: `${err.message}`});
     }
     this.getWeatherData();
+    this.getMovieData();
   }
 
   getWeatherData = async () => {
@@ -64,6 +67,20 @@ class App extends React.Component {
     this.setState({error: `${err.message}`})
   }
   }
+
+  getMovieData = async () => {
+    try {
+      const movieData = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/movies`, {
+        params: {
+          city: this.state.citySearchedFor
+        }});
+        this.setState({
+          movieData: movieData.data,
+        });
+    } catch (err) {
+      this.setState({error: `${err.message}`});
+    }
+  };
 
   render() {
     return (
@@ -99,6 +116,7 @@ class App extends React.Component {
             </Card.Body>
             </Card>
             <Weather weatherData={this.state.weatherData} error={this.state.error} />
+            <Movies movieData={this.state.movieData} error={this.state.error}/>
       </>
       : ''}
       </div>
